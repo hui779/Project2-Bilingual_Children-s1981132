@@ -1,0 +1,427 @@
+---
+title: "language-analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dbplyr)
+library(tidyverse)
+library(ggplot2)
+```
+
+
+```{r}
+#rm(list=ls())
+```
+
+```{r}
+load("../code-analysis/Data.Rda")
+```
+
+
+
+1. Analysis for Language Area
+```{r}
+Data$bpvs_raw=scale(Data$bpvs_raw)
+Data$vocabprocess_processing_speed_target=scale(Data$vocabprocess_processing_speed_target)
+l=data.frame(bpvs_raw=Data$bpvs_raw,processing_speed_target=Data$vocabprocess_processing_speed_target)
+l.PCA=princomp(l,cor=TRUE)
+summary(l.PCA,loadings=TRUE)
+```
+
+
+```{r}
+Language=0.707*Data$bpvs_raw-0.707*Data$vocabprocess_processing_speed_target
+Data$age_acquisition=as.double(Data$age_acquisition)
+d=data.frame(Language,diagnosis=Data$diagnosis,gender=Data$gender,age=scale(Data$age_m),IQ=scale(Data$wasi_sum_rawscores),bilec_total_input=scale(Data$bilec_total_input),bilec_total_output=scale(Data$bilec_total_output),age_acquisition=scale(Data$age_acquisition),where_english=Data$where_english)
+d1=d%>%filter(diagnosis=="non-autistic")%>%select(-diagnosis)
+d2=d%>%filter(diagnosis=="autistic")%>%select(-diagnosis)
+```
+
+
+
+```{r}
+d1$age_acquisition=as.double(d1$age_acquisition)
+d2$age_acquisition=as.double(d2$age_acquisition)
+
+gender=d1$gender
+age=d1$age
+bilec_total_input=d1$bilec_total_input
+bilec_total_output=d1$bilec_total_output
+age_acquisition=d1$age_acquisition
+
+fit1=lm(d1$Language~age+gender+bilec_total_input+bilec_total_output+age_acquisition)
+
+gender=d2$gender
+age=d2$age
+bilec_total_input=d2$bilec_total_input
+bilec_total_output=d2$bilec_total_output
+age_acquisition=d2$age_acquisition
+
+
+fit2=lm(d2$Language~age+gender+bilec_total_input+bilec_total_output+age_acquisition)
+summary(fit1)
+summary(fit2)
+```
+
+```{r}
+qqplot(d1$Language,predict(fit1),xlab="Observations",ylab="Prediction")
+lines(x=c(-2,2),y=c(-2,2))
+qqplot(d2$Language,predict(fit2),xlab="Observations",ylab="Prediction")
+lines(x=c(-2,2),y=c(-2,2))
+```
+
+
+
+```{r}
+lw1=summary(fit1)$coef[,3]*summary(fit1)$coef[,2]-qt(0.025,45,lower.tail = FALSE)*summary(fit1)$coef[,2]
+up1=summary(fit1)$coef[,3]*summary(fit1)$coef[,2]+qt(0.025,45,lower.tail = FALSE)*summary(fit1)$coef[,2]
+lw2=summary(fit2)$coef[,3]*summary(fit2)$coef[,2]-qt(0.025,32,lower.tail = FALSE)*summary(fit2)$coef[,2]
+up2=summary(fit2)$coef[,3]*summary(fit2)$coef[,2]+qt(0.025,32,lower.tail = FALSE)*summary(fit2)$coef[,2]
+p=c(summary(fit1)$coef[,1],summary(fit2)$coef[,1])
+lw=c(lw1,lw2)
+up=c(up1,up2)
+x=c("(intercept)","age","gender","input","output","age_aq","(intercept)","age","gender","input","output","age_aq")
+diagnosis=c(rep("non-autistic",6),rep("autistic",6))
+l=data.frame(x=x,diagnosis,lw=lw,up=up,p=p)
+ggplot(data=l)+
+  geom_pointrange(aes(x=factor(x,levels=c("(intercept)","age","gender","input","output","age_aq")),y=p,ymin=lw,ymax=up,colour=diagnosis,group=diagnosis),position = position_dodge(0.5))+
+  xlab("bilingual factors")+
+  ylab("coefficients")+
+  geom_hline(aes(yintercept=0),linetype="dashed",colour="#990000")+
+  theme(panel.grid =element_blank())+
+  scale_color_manual(values=c('#999999','#E69F00'))
+```
+
+
+
+
+2. Analysis for social Cognition Area
+```{r}
+s1=data.frame(tomi_early=scale(Data$tomi_early),tomi_basic=scale(Data$tomi_basic),tomi_advanced=scale(Data$tomi_advanced),tom_tb_totalscore=scale(Data$tom_tb_totalscore))
+s2=data.frame(FiguresTask=scale(Data$et_figurestask_dwell_time_interacting-Data$et_figurestask_dwell_time_not_interacting),FalseBelief=scale(Data$et_falsebelief_testtrial_preference_score))
+s1.PCA=princomp(s1,cor=TRUE)
+summary(s1.PCA,loadings=TRUE)
+s2.PCA=princomp(s2,cor=TRUE)
+summary(s2.PCA,loadings=TRUE)
+s=data.frame(tomi_early=scale(Data$tomi_early),tomi_basic=scale(Data$tomi_basic),tomi_advanced=scale(Data$tomi_advanced),tom_tb_totalscore=scale(Data$tom_tb_totalscore),FiguresTask=scale(Data$et_figurestask_dwell_time_interacting-Data$et_figurestask_dwell_time_not_interacting),FalseBelief=scale(Data$et_falsebelief_testtrial_preference_score))
+s.PCA=princomp(s,cor=TRUE)
+summary(s.PCA,loadings=TRUE)
+```
+```{r}
+Data$age_acquisition=as.double(Data$age_acquisition)
+s1=data.frame(tomi_early=scale(Data$tomi_early),tomi_basic=scale(Data$tomi_basic),tomi_advanced=scale(Data$tomi_advanced),tom_tb_totalscore=scale(Data$tom_tb_totalscore))
+s2=data.frame(FiguresTask=scale(Data$et_figurestask_dwell_time_interacting-Data$et_figurestask_dwell_time_not_interacting),FalseBelief=scale(Data$et_falsebelief_testtrial_preference_score))
+s=data.frame(tomi_early=scale(Data$tomi_early),tomi_basic=scale(Data$tomi_basic),tomi_advanced=scale(Data$tomi_advanced),tom_tb_totalscore=scale(Data$tom_tb_totalscore),FiguresTask=scale(Data$et_figurestask_dwell_time_interacting)-scale(Data$et_figurestask_dwell_time_not_interacting),FalseBelief=scale(Data$et_falsebelief_testtrial_preference_score))
+
+Social_cognition1=0.486*s$tomi_early+0.537*s$tomi_basic+0.538*s$tomi_advanced+0.376*s$tom_tb_totalscore+0.162*s$FiguresTask+0.137*s$FalseBelief
+Social_cognition2=0.115*s$tomi_early+0.173*s$tomi_basic+0.124*s$tomi_advanced-0.703*s$FiguresTask-0.668*s$FalseBelief
+
+#ds$age_acquisition=as.double(ds$age_acquisition)
+ds=data.frame(Social_cognition1,Social_cognition2,diagnosis=Data$diagnosis,gender=Data$gender,age=scale(Data$age_m),IQ=scale(Data$wasi_sum_rawscores),bilec_total_input=scale(Data$bilec_total_input),bilec_total_output=scale(Data$bilec_total_output),age_acquisition=scale(Data$age_acquisition),where_english=Data$where_english)
+ds$diagnosis=ifelse(ds$diagnosis=="non-autistic",0,1)
+
+ds1=ds%>%filter(diagnosis==0)
+ds2=ds%>%filter(diagnosis==1)
+
+gender=ds1$gender
+age=ds1$age
+bilec_total_input=ds1$bilec_total_input
+bilec_total_output=ds1$bilec_total_output
+age_acquisition=ds1$age_acquisition
+
+fit_s11=lm(ds1$Social_cognition1~age+gender+bilec_total_input+bilec_total_output+age_acquisition)
+#fit_s12=lm(ds1$Social_cognition2~age+gender+bilec_total_input+bilec_total_output+age_acquisition)
+gender=ds2$gender
+age=ds2$age
+bilec_total_input=ds2$bilec_total_input
+bilec_total_output=ds2$bilec_total_output
+age_acquisition=ds2$age_acquisition
+
+fit_s21=lm(ds2$Social_cognition1~age+gender+bilec_total_input+bilec_total_output+age_acquisition)
+#fit_s22=lm(ds2$Social_cognition2~age+gender+bilec_total_input+bilec_total_output+age_acquisition)
+
+summary(fit_s11)
+summary(fit_s21)
+```
+
+```{r}
+tom=0.496*s1$tomi_early+0.553*s1$tomi_basic+0.551*s1$tomi_advanced+0.38*s1$tom_tb_totalscore
+s3=0.707*s2$FiguresTask+0.707*s2$FalseBelief
+t=data.frame(tom,FiguresTask=s2$FiguresTask,FalseBelief=s2$FalseBelief,s3,diagnosis=Data$diagnosis,age=scale(Data$age_m),gender=Data$gender,bilec_total_input=scale(Data$bilec_total_input),bilec_total_output=scale(Data$bilec_total_output),age_acquisition=scale(Data$age_acquisition))
+t$diagnosis=ifelse(t$diagnosis=="non-autistic",0,1)
+
+t1=t%>%filter(diagnosis==0)
+t2=t%>%filter(diagnosis==1)
+
+age=t1$age
+gender=t1$gender
+bilec_total_input=t1$bilec_total_input
+bilec_total_output=t1$bilec_total_output
+age_acquisition=t1$age_acquisition
+
+t11=lm(t1$tom~age+gender+bilec_total_input+bilec_total_output+age_acquisition)
+#t12=lm(t1$FiguresTask~age+bilec_total_input+bilec_total_output+age_acquisition)
+#t13=lm(t1$FalseBelief~age+bilec_total_input+bilec_total_output+age_acquisition)
+t14=lm(t1$s3~age+gender+bilec_total_input+bilec_total_output+age_acquisition)
+
+age=t2$age
+gender=t2$gender
+bilec_total_input=t2$bilec_total_input
+bilec_total_output=t2$bilec_total_output
+age_acquisition=t2$age_acquisition
+
+t21=lm(t2$tom~age+gender+bilec_total_input+bilec_total_output+age_acquisition)
+#t22=lm(t2$FiguresTask~age+bilec_total_input+bilec_total_output+age_acquisition)
+#t23=lm(t2$FalseBelief~age+bilec_total_input+bilec_total_output+age_acquisition)
+t24=lm(t2$s3~age+gender+bilec_total_input+bilec_total_output+age_acquisition)
+
+#summary(t11)
+#summary(t21)
+summary(t14)
+summary(t24)
+```
+
+```{r}
+lw1=summary(fit_s11)$coef[,1]-qt(0.025,45,lower.tail = FALSE)*summary(fit_s11)$coef[,2]
+up1=summary(fit_s11)$coef[,1]+qt(0.025,45,lower.tail = FALSE)*summary(fit_s11)$coef[,2]
+lw2=summary(fit_s21)$coef[,1]-qt(0.025,32,lower.tail = FALSE)*summary(fit_s21)$coef[,2]
+up2=summary(fit_s21)$coef[,1]+qt(0.025,32,lower.tail = FALSE)*summary(fit_s21)$coef[,2]
+lw3=summary(t11)$coef[,1]-qt(0.025,45,lower.tail = FALSE)*summary(t11)$coef[,2]
+up3=summary(t11)$coef[,1]+qt(0.025,45,lower.tail = FALSE)*summary(t11)$coef[,2]
+lw4=summary(t21)$coef[,1]-qt(0.025,32,lower.tail = FALSE)*summary(t21)$coef[,2]
+up4=summary(t21)$coef[,1]+qt(0.025,32,lower.tail = FALSE)*summary(t21)$coef[,2]
+lw5=summary(t14)$coef[,1]-qt(0.025,45,lower.tail = FALSE)*summary(t14)$coef[,2]
+up5=summary(t14)$coef[,1]+qt(0.025,45,lower.tail = FALSE)*summary(t14)$coef[,2]
+lw6=summary(t24)$coef[,1]-qt(0.025,32,lower.tail = FALSE)*summary(t24)$coef[,2]
+up6=summary(t24)$coef[,1]+qt(0.025,32,lower.tail = FALSE)*summary(t24)$coef[,2]
+
+diagnosis=c("non-autistic","autistic","non-autistic","autistic","non-autistic","autistic")
+lw_intercept=c(lw1[1],lw2[1],lw3[1],lw4[1],lw5[1],lw6[1])
+lw_age=c(lw1[2],lw2[2],lw3[2],lw4[2],lw5[2],lw6[2])
+lw_gender=c(lw1[3],lw2[3],lw3[3],lw4[3],lw5[3],lw6[3])
+lw_input=c(lw1[4],lw2[4],lw3[4],lw4[4],lw5[4],lw6[4])
+lw_output=c(lw1[5],lw2[5],lw3[5],lw4[5],lw5[5],lw6[5])
+lw_acquisition=c(lw1[6],lw2[6],lw3[6],lw4[6],lw5[6],lw6[6])
+up_intercept=c(up1[1],up2[1],up3[1],up4[1],up5[1],up6[1])
+up_age=c(up1[2],up2[2],up3[2],up4[2],up5[2],up6[2])
+up_gender=c(up1[3],up2[3],up3[3],up4[3],up5[3],up6[3])
+up_input=c(up1[4],up2[4],up3[4],up4[4],up5[4],up6[4])
+up_output=c(up1[5],up2[5],up3[5],up4[5],up5[5],up6[5])
+up_acquisition=c(up1[6],up2[6],up3[6],up4[6],up5[6],up6[6])
+p_intercept=c(summary(fit_s11)$coef[1,1],summary(fit_s21)$coef[1,1],summary(t11)$coef[1,1],summary(t21)$coef[1,1],summary(t14)$coef[1,1],summary(t24)$coef[1,1])
+p_age=c(summary(fit_s11)$coef[2,1],summary(fit_s21)$coef[2,1],summary(t11)$coef[2,1],summary(t21)$coef[2,1],summary(t14)$coef[2,1],summary(t24)$coef[2,1])
+p_gender=c(summary(fit_s11)$coef[3,1],summary(fit_s21)$coef[3,1],summary(t11)$coef[3,1],summary(t21)$coef[3,1],summary(t14)$coef[3,1],summary(t24)$coef[3,1])
+p_input=c(summary(fit_s11)$coef[4,1],summary(fit_s21)$coef[4,1],summary(t11)$coef[4,1],summary(t21)$coef[4,1],summary(t14)$coef[4,1],summary(t24)$coef[4,1])
+p_output=c(summary(fit_s11)$coef[5,1],summary(fit_s21)$coef[5,1],summary(t11)$coef[5,1],summary(t21)$coef[5,1],summary(t14)$coef[5,1],summary(t24)$coef[5,1])
+p_acquisition=c(summary(fit_s11)$coef[6,1],summary(fit_s21)$coef[6,1],summary(t11)$coef[6,1],summary(t21)$coef[6,1],summary(t14)$coef[6,1],summary(t24)$coef[6,1])
+
+x=c("PC_1","PC_1","PC_2","PC_2","PC_3","PC_3")
+s1=data.frame(x=x,diagnosis=diagnosis,p=p_intercept,lw=lw_intercept,up=up_intercept)
+s2=data.frame(x=x,diagnosis=diagnosis,p=p_age,lw=lw_age,up=up_age)
+s3=data.frame(x=x,diagnosis=diagnosis,p=p_gender,lw=lw_gender,up=up_gender)
+s4=data.frame(x=x,diagnosis=diagnosis,p=p_input,lw=lw_input,up=up_input)
+s5=data.frame(x=x,diagnosis=diagnosis,p=p_output,lw=lw_output,up=up_output)
+s6=data.frame(x=x,diagnosis=diagnosis,p=p_acquisition,lw=lw_acquisition,up=up_acquisition)
+par(mfrow=c(3,2))
+ggplot(data=s1)+
+  geom_pointrange(aes(x=x,y=p,ymin=lw,ymax=up,colour=diagnosis,group=diagnosis),position = position_dodge(0.5))+
+  xlab("model")+
+  ylab("coefficients")+
+  geom_hline(aes(yintercept=0),linetype="dashed",colour="#990000")+
+  theme(panel.grid =element_blank())+
+  scale_color_manual(values=c('#548687','#CC9999'))
+
+ggplot(data=s2)+
+  geom_pointrange(aes(x=x,y=p,ymin=lw,ymax=up,colour=diagnosis,group=diagnosis),position = position_dodge(0.5))+
+  xlab("model")+
+  ylab("coefficients")+
+  geom_hline(aes(yintercept=0),linetype="dashed",colour="#990000")+
+  theme(panel.grid =element_blank())+
+  scale_color_manual(values=c('#548687','#CC9999'))
+
+ggplot(data=s3)+
+  geom_pointrange(aes(x=x,y=p,ymin=lw,ymax=up,colour=diagnosis,group=diagnosis),position = position_dodge(0.5))+
+  xlab("model")+
+  ylab("coefficients")+
+  geom_hline(aes(yintercept=0),linetype="dashed",colour="#990000")+
+  theme(panel.grid =element_blank())+
+  scale_color_manual(values=c('#548687','#CC9999'))
+
+ggplot(data=s4)+
+  geom_pointrange(aes(x=x,y=p,ymin=lw,ymax=up,colour=diagnosis,group=diagnosis),position = position_dodge(0.5))+
+  xlab("model")+
+  ylab("coefficients")+
+  geom_hline(aes(yintercept=0),linetype="dashed",colour="#990000")+
+  theme(panel.grid =element_blank())+
+  scale_color_manual(values=c('#548687','#CC9999'))
+
+ggplot(data=s5)+
+  geom_pointrange(aes(x=x,y=p,ymin=lw,ymax=up,colour=diagnosis,group=diagnosis),position = position_dodge(0.5))+
+  xlab("model")+
+  ylab("coefficients")+
+  geom_hline(aes(yintercept=0),linetype="dashed",colour="#990000")+
+  theme(panel.grid =element_blank())+
+  scale_color_manual(values=c('#548687','#CC9999'))
+ggplot(data=s6)+
+  geom_pointrange(aes(x=x,y=p,ymin=lw,ymax=up,colour=diagnosis,group=diagnosis),position = position_dodge(0.5))+
+  xlab("model")+
+  ylab("coefficients")+
+  geom_hline(aes(yintercept=0),linetype="dashed",colour="#990000")+
+  theme(panel.grid =element_blank())+
+  scale_color_manual(values=c('#548687','#CC9999'))
+```
+
+
+3.Analysis for Executive Functions
+```{r}
+ef1=data.frame(brief_raw_inhibit=scale(Data$brief_raw_inhibit),brief_raw_self_monitor=scale(Data$`brief_raw_self-monitor`),brief_raw_shift=scale(Data$brief_raw_shift),brief_raw_emotional_control=scale(Data$brief_raw_emotional_control),brief_raw_initiate=scale(Data$brief_raw_initiate),brief_raw_working_memory=scale(Data$brief_raw_working_memory),brief_raw_plan_organise=scale(Data$brief_raw_plan_organise),brief_raw_task_monitor=scale(Data$brief_raw_task_monitor),brief_raw_organisation_of_materials=scale(Data$brief_raw_organisation_of_materials))
+
+ef2=data.frame(flanker_percenterrors_congruent=scale(Data$flanker_percenterrors_congruent),flanker_percenterrors_incongruent=scale(Data$flanker_percenterrors_incongruent),flanker_mean_rt_congruent=scale(Data$flanker_mean_rt_congruent),flanker_mean_rt_incongruent=scale(Data$flanker_mean_rt_incongruent))
+
+ef3=data.frame(pvt_mean_rt=scale(Data$pvt_mean_rt),pvt_number_of_lapses=scale(Data$pvt_number_of_lapses),pvt_mean_lapse_rt=scale(Data$pvt_mean_lapse_rt),pvt_count_falsestarts=scale(Data$pvt_count_falsestarts))
+
+e1.PCA=princomp(ef1,cor=TRUE)
+summary(e1.PCA,loadings=TRUE)
+e2.PCA=princomp(ef2,cor=TRUE)
+summary(e2.PCA,loadings=TRUE)
+e3.PCA=princomp(ef3,cor=TRUE)
+summary(e3.PCA,loadings=TRUE)
+```
+
+
+```{r}
+e1=0.354*ef1$brief_raw_inhibit+0.183*ef1$brief_raw_self_monitor+0.351*ef1$brief_raw_shift+0.330*ef1$brief_raw_emotional_control+0.347*ef1$brief_raw_initiate+0.361*ef1$brief_raw_working_memory+0.371*ef1$brief_raw_plan_organise+0.362*ef1$brief_raw_task_monitor+0.299*ef1$brief_raw_organisation_of_materials
+
+e2=0.491*ef2$flanker_percenterrors_congruent+0.483*ef2$flanker_percenterrors_incongruent+0.533*ef2$flanker_mean_rt_congruent+0.493*ef2$flanker_mean_rt_incongruent
+
+e3=0.677*ef3$pvt_mean_rt+0.316*ef3$pvt_number_of_lapses+0.654*ef3$pvt_mean_lapse_rt+0.123*ef3$pvt_count_falsestarts
+
+de=data.frame(e1,e2,e3,diagnosis=Data$diagnosis,gender=Data$gender,age=scale(Data$age_m),IQ=scale(Data$wasi_sum_rawscores),bilec_total_input=scale(Data$bilec_total_input),bilec_total_output=scale(Data$bilec_total_output),age_acquisition=scale(Data$age_acquisition),where_english=Data$where_english)
+de$diagnosis=ifelse(de$diagnosis=="non-autistic",0,1)
+
+de1=de%>%filter(diagnosis==0)
+de2=de%>%filter(diagnosis==1)
+
+gender=de1$gender
+age=de1$age
+bilec_total_input=de1$bilec_total_input
+bilec_total_output=de1$bilec_total_output
+age_acquisition=de1$age_acquisition
+
+fit_e11=lm(de1$e1~age+gender+bilec_total_input+bilec_total_output+age_acquisition)
+fit_e21=lm(de1$e2~age+gender+bilec_total_input+bilec_total_output+age_acquisition)
+fit_e31=lm(de1$e3~age+gender+bilec_total_input+bilec_total_output+age_acquisition)
+
+gender=de2$gender
+age=de2$age
+bilec_total_input=de2$bilec_total_input
+bilec_total_output=de2$bilec_total_output
+age_acquisition=de2$age_acquisition
+
+fit_e12=lm(de2$e1~age+gender+bilec_total_input+bilec_total_output+age_acquisition)
+fit_e22=lm(de2$e2~age+gender+bilec_total_input+bilec_total_output+age_acquisition)
+fit_e32=lm(de2$e3~age+gender+bilec_total_input+bilec_total_output+age_acquisition)
+
+#summary(fit_e11)
+#summary(fit_e12)
+#summary(fit_e21)
+#summary(fit_e22)
+#summary(fit_e31)
+#summary(fit_e32)
+```
+
+```{r}
+lw1=summary(fit_e11)$coef[,1]-qt(0.025,45,lower.tail = FALSE)*summary(fit_e11)$coef[,2]
+up1=summary(fit_e11)$coef[,1]+qt(0.025,45,lower.tail = FALSE)*summary(fit_e11)$coef[,2]
+lw2=summary(fit_e12)$coef[,1]-qt(0.025,32,lower.tail = FALSE)*summary(fit_e12)$coef[,2]
+up2=summary(fit_e12)$coef[,1]+qt(0.025,32,lower.tail = FALSE)*summary(fit_e12)$coef[,2]
+lw3=summary(fit_e21)$coef[,1]-qt(0.025,45,lower.tail = FALSE)*summary(fit_e21)$coef[,2]
+up3=summary(fit_e21)$coef[,1]+qt(0.025,45,lower.tail = FALSE)*summary(fit_e21)$coef[,2]
+lw4=summary(fit_e22)$coef[,1]-qt(0.025,32,lower.tail = FALSE)*summary(fit_e22)$coef[,2]
+up4=summary(fit_e22)$coef[,1]+qt(0.025,32,lower.tail = FALSE)*summary(fit_e22)$coef[,2]
+lw5=summary(fit_e31)$coef[,1]-qt(0.025,45,lower.tail = FALSE)*summary(fit_e31)$coef[,2]
+up5=summary(fit_e31)$coef[,1]+qt(0.025,45,lower.tail = FALSE)*summary(fit_e31)$coef[,2]
+lw6=summary(fit_e32)$coef[,1]-qt(0.025,32,lower.tail = FALSE)*summary(fit_e32)$coef[,2]
+up6=summary(fit_e32)$coef[,1]+qt(0.025,32,lower.tail = FALSE)*summary(fit_e32)$coef[,2]
+
+diagnosis=c("non-autistic","autistic","non-autistic","autistic","non-autistic","autistic")
+lw_intercept=c(lw1[1],lw2[1],lw3[1],lw4[1],lw5[1],lw6[1])
+lw_age=c(lw1[2],lw2[2],lw3[2],lw4[2],lw5[2],lw6[2])
+lw_gender=c(lw1[3],lw2[3],lw3[3],lw4[3],lw5[3],lw6[3])
+lw_input=c(lw1[4],lw2[4],lw3[4],lw4[4],lw5[4],lw6[4])
+lw_output=c(lw1[5],lw2[5],lw3[5],lw4[5],lw5[5],lw6[5])
+lw_acquisition=c(lw1[6],lw2[6],lw3[6],lw4[6],lw5[6],lw6[6])
+up_intercept=c(up1[1],up2[1],up3[1],up4[1],up5[1],up6[1])
+up_age=c(up1[2],up2[2],up3[2],up4[2],up5[2],up6[2])
+up_gender=c(up1[3],up2[3],up3[3],up4[3],up5[3],up6[3])
+up_input=c(up1[4],up2[4],up3[4],up4[4],up5[4],up6[4])
+up_output=c(up1[5],up2[5],up3[5],up4[5],up5[5],up6[5])
+up_acquisition=c(up1[6],up2[6],up3[6],up4[6],up5[6],up6[6])
+p_intercept=c(summary(fit_e11)$coef[1,1],summary(fit_e12)$coef[1,1],summary(fit_e21)$coef[1,1],summary(fit_e22)$coef[1,1],summary(fit_e31)$coef[1,1],summary(fit_e32)$coef[1,1])
+p_age=c(summary(fit_e11)$coef[2,1],summary(fit_e12)$coef[2,1],summary(fit_e21)$coef[2,1],summary(fit_e22)$coef[2,1],summary(fit_e31)$coef[2,1],summary(fit_e32)$coef[2,1])
+p_gender=c(summary(fit_e11)$coef[3,1],summary(fit_e12)$coef[3,1],summary(fit_e21)$coef[3,1],summary(fit_e22)$coef[3,1],summary(fit_e31)$coef[3,1],summary(fit_e32)$coef[3,1])
+p_input=c(summary(fit_e11)$coef[4,1],summary(fit_e12)$coef[4,1],summary(fit_e21)$coef[4,1],summary(fit_e22)$coef[4,1],summary(fit_e31)$coef[4,1],summary(fit_e32)$coef[4,1])
+p_output=c(summary(fit_e11)$coef[5,1],summary(fit_e12)$coef[5,1],summary(fit_e21)$coef[5,1],summary(fit_e22)$coef[5,1],summary(fit_e31)$coef[5,1],summary(fit_e32)$coef[5,1])
+p_acquisition=c(summary(fit_e11)$coef[6,1],summary(fit_e12)$coef[6,1],summary(fit_e21)$coef[6,1],summary(fit_e22)$coef[6,1],summary(fit_e31)$coef[6,1],summary(fit_e32)$coef[6,1])
+
+x=c("PC_1","PC_1","PC_2","PC_2","PC_3","PC_3")
+s1=data.frame(x=x,diagnosis=diagnosis,p=p_intercept,lw=lw_intercept,up=up_intercept)
+s2=data.frame(x=x,diagnosis=diagnosis,p=p_age,lw=lw_age,up=up_age)
+s3=data.frame(x=x,diagnosis=diagnosis,p=p_gender,lw=lw_gender,up=up_gender)
+s4=data.frame(x=x,diagnosis=diagnosis,p=p_input,lw=lw_input,up=up_input)
+s5=data.frame(x=x,diagnosis=diagnosis,p=p_output,lw=lw_output,up=up_output)
+s6=data.frame(x=x,diagnosis=diagnosis,p=p_acquisition,lw=lw_acquisition,up=up_acquisition)
+par(mfrow=c(3,2))
+ggplot(data=s1)+
+  geom_pointrange(aes(x=x,y=p,ymin=lw,ymax=up,colour=diagnosis,group=diagnosis),position = position_dodge(0.5))+
+  xlab("model")+
+  ylab("coefficients")+
+  geom_hline(aes(yintercept=0),linetype="dashed",colour="#990000")+
+  theme(panel.grid =element_blank())+
+  scale_color_manual(values=c('#999999','#E69F00'))
+
+ggplot(data=s2)+
+  geom_pointrange(aes(x=x,y=p,ymin=lw,ymax=up,colour=diagnosis,group=diagnosis),position = position_dodge(0.5))+
+  xlab("model")+
+  ylab("coefficients")+
+  geom_hline(aes(yintercept=0),linetype="dashed",colour="#990000")+
+  theme(panel.grid =element_blank())+
+  scale_color_manual(values=c('#999999','#E69F00'))
+
+ggplot(data=s3)+
+  geom_pointrange(aes(x=x,y=p,ymin=lw,ymax=up,colour=diagnosis,group=diagnosis),position = position_dodge(0.5))+
+  xlab("model")+
+  ylab("coefficients")+
+  geom_hline(aes(yintercept=0),linetype="dashed",colour="#990000")+
+  theme(panel.grid =element_blank())+
+  scale_color_manual(values=c('#999999','#E69F00'))
+
+ggplot(data=s4)+
+  geom_pointrange(aes(x=x,y=p,ymin=lw,ymax=up,colour=diagnosis,group=diagnosis),position = position_dodge(0.5))+
+  xlab("model")+
+  ylab("coefficients")+
+  geom_hline(aes(yintercept=0),linetype="dashed",colour="#990000")+
+  theme(panel.grid =element_blank())+
+  scale_color_manual(values=c('#999999','#E69F00'))
+
+ggplot(data=s5)+
+  geom_pointrange(aes(x=x,y=p,ymin=lw,ymax=up,colour=diagnosis,group=diagnosis),position = position_dodge(0.5))+
+  xlab("model")+
+  ylab("coefficients")+
+  geom_hline(aes(yintercept=0),linetype="dashed",colour="#990000")+
+  theme(panel.grid =element_blank())+
+  scale_color_manual(values=c('#999999','#E69F00'))
+ggplot(data=s6)+
+  geom_pointrange(aes(x=x,y=p,ymin=lw,ymax=up,colour=diagnosis,group=diagnosis),position = position_dodge(0.5))+
+  xlab("model")+
+  ylab("coefficients")+
+  geom_hline(aes(yintercept=0),linetype="dashed",colour="#990000")+
+  theme(panel.grid =element_blank())+
+  scale_color_manual(values=c('#999999','#E69F00'))
+```
+

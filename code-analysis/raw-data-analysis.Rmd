@@ -1,0 +1,398 @@
+---
+title: "raw data set analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+#rm(list=ls())
+```
+
+```{r}
+library(dbplyr)
+library(tidyverse)
+library(ggplot2)
+#library(VIM)
+library(Amelia)
+```
+
+
+```{r}
+Data=read.csv("Rawdata.csv")
+Data=as.data.frame(Data)
+```
+
+1.Impute missing values and Analyze the basic information of samples.
+
+```{r}
+for(t in 1:ncol(Data))
+{
+  w=which(Data[,t]==888)
+  Data[,t][w]=NA
+}
+```
+
+
+```{r}
+colnames(Data)=c("part_no","gender","age_m","diagnosis","SCQ","bpvs_raw","processing_speed","wasi_sum_rawscores","tomi_early","tomi_basic","tomi_advanced","tomi_compmean","tom_tb_totalscore","figurestask_interacting","figurestask_not_interacting","falsebelief_correct","falsebelief_incorrect","falsebelief_score","bilec_home_input","bilec_english_input","bilec_home_output","bilec_english_output","bilec_total_input","bilec_total_output","age_acquisition","where_english","brief_raw_inhibit","brief_raw_self-monitor","brief_raw_shift","brief_raw_emotional_control","brief_raw_initiate","brief_raw_working_memory","brief_raw_plan_organise","brief_raw_task_monitor","brief_raw_materials","flanker_percenterrors_congruent","flanker_percenterrors_incongruent","flanker_mean_rt_congruent","flanker_mean_rt_incongruent","pvt_mean_rt","pvt_number_of_lapses","pvt_mean_lapse_rt","pvt_count_falsestarts")
+```
+
+
+
+```{r,fig.width = 7, fig.height = 4,out.width = "588", out.height = "588"}
+
+par(oma=c(4,0,0,0))
+missmap(Data)
+```
+
+
+
+```{r}
+Data=read.csv("Rawdata.csv")
+Data=as.data.frame(Data)
+```
+
+
+
+```{r}
+# Explore the detailed information of missing data
+for(t in 1:ncol(Data))
+{
+  print(names(Data)[t])
+  print(length(which(Data[,t]==888)))
+}
+```
+
+
+```{r}
+# Impute missing data
+d1=Data%>%filter(vocabprocess_processing_speed_target!=888)%>%group_by(diagnosis)%>%summarise(m=mean(vocabprocess_processing_speed_target))
+for(t in which(Data$vocabprocess_processing_speed_target==888))
+{
+  Data$vocabprocess_processing_speed_target[t]=ifelse(Data$diagnosis[t]==0,d1$m[1],d1$m[2])
+}
+
+d2=Data%>%filter(tomi_early!=888)%>%group_by(diagnosis)%>%summarise(m=mean(tomi_early))
+for(t in which(Data$tomi_early==888))
+{
+  Data$tomi_early[t]=ifelse(Data$diagnosis[t]==0,d2$m[1],d2$m[2])
+}
+
+d3=Data%>%filter(tomi_basic!=888)%>%group_by(diagnosis)%>%summarise(m=mean(tomi_basic))
+for(t in which(Data$tomi_basic==888))
+{
+  Data$tomi_basic[t]=ifelse(Data$diagnosis[t]==0,d3$m[1],d3$m[2])
+}
+
+d4=Data%>%filter(tomi_advanced!=888)%>%group_by(diagnosis)%>%summarise(m=mean(tomi_advanced))
+for(t in which(Data$tomi_advanced==888))
+{
+  Data$tomi_advanced[t]=ifelse(Data$diagnosis[t]==0,d4$m[1],d4$m[2])
+}
+
+for(t in which(Data$tomi_compmean==888))
+{
+  Data$tomi_compmean[t]=(Data$tomi_early[t]+Data$tomi_basic[t]+Data$tomi_advanced[t])/3
+}
+
+d5=Data%>%filter(tom_tb_totalscore!=888)%>%group_by(diagnosis)%>%summarise(m=mean(tom_tb_totalscore))
+for(t in which(Data$tom_tb_totalscore==888))
+{
+  Data$tom_tb_totalscore[t]=ifelse(Data$diagnosis[t]==0,d5$m[1],d5$m[2])
+}
+
+d6=Data%>%filter(et_figurestask_dwell_time_interacting!=888)%>%group_by(diagnosis)%>%summarise(m=mean(et_figurestask_dwell_time_interacting))
+for(t in which(Data$et_figurestask_dwell_time_interacting==888))
+{
+  Data$et_figurestask_dwell_time_interacting[t]=ifelse(Data$diagnosis[t]==0,d6$m[1],d6$m[2])
+}
+
+d7=Data%>%filter(et_figurestask_dwell_time_not_interacting!=888)%>%group_by(diagnosis)%>%summarise(m=mean(et_figurestask_dwell_time_not_interacting))
+for(t in which(Data$et_figurestask_dwell_time_not_interacting==888))
+{
+  Data$et_figurestask_dwell_time_not_interacting[t]=ifelse(Data$diagnosis[t]==0,d7$m[1],d7$m[2])
+}
+
+d8=Data%>%filter(et_falsebelief_Testtrial_dwell_time_to_correct!=888)%>%group_by(diagnosis)%>%summarise(m=mean(et_falsebelief_Testtrial_dwell_time_to_correct))
+for(t in which(Data$et_falsebelief_Testtrial_dwell_time_to_correct==888))
+{
+  Data$et_falsebelief_Testtrial_dwell_time_to_correct[t]=ifelse(Data$diagnosis[t]==0,d8$m[1],d8$m[2])
+}
+
+d9=Data%>%filter(et_falsebelief_testtrial_dwell_time_to_incorrect!=888)%>%group_by(diagnosis)%>%summarise(m=mean(et_falsebelief_testtrial_dwell_time_to_incorrect))
+for(t in which(Data$et_falsebelief_testtrial_dwell_time_to_incorrect==888))
+{
+  Data$et_falsebelief_testtrial_dwell_time_to_incorrect[t]=ifelse(Data$diagnosis[t]==0,d9$m[1],d9$m[2])
+}
+
+d10=Data%>%filter(et_falsebelief_testtrial_preference_score!=888)%>%group_by(diagnosis)%>%summarise(m=mean(et_falsebelief_testtrial_preference_score))
+for(t in which(Data$et_falsebelief_testtrial_preference_score==888))
+{
+  Data$et_falsebelief_testtrial_preference_score[t]=ifelse(Data$diagnosis[t]==0,d10$m[1],d10$m[2])
+}
+```
+
+
+
+```{r}
+d11=Data%>%filter(brief_raw_inhibit!=888)%>%group_by(diagnosis)%>%summarise(m=mean(brief_raw_inhibit))
+for(t in which(Data$brief_raw_inhibit==888))
+{
+  Data$brief_raw_inhibit[t]=ifelse(Data$diagnosis[t]==0,d11$m[1],d11$m[2])
+}
+d12=Data%>%filter(brief_raw_self.monitor!=888)%>%group_by(diagnosis)%>%summarise(m=mean(brief_raw_self.monitor))
+for(t in which(Data$brief_raw_self.monitor==888))
+{
+  Data$brief_raw_self.monitor[t]=ifelse(Data$diagnosis[t]==0,d12$m[1],d12$m[2])
+}
+
+d13=Data%>%filter(brief_raw_shift!=888)%>%group_by(diagnosis)%>%summarise(m=mean(brief_raw_shift))
+for(t in which(Data$brief_raw_shift==888))
+{
+  Data$brief_raw_shift[t]=ifelse(Data$diagnosis[t]==0,d13$m[1],d13$m[2])
+}
+
+d14=Data%>%filter(brief_raw_emotional_control!=888)%>%group_by(diagnosis)%>%summarise(m=mean(brief_raw_emotional_control))
+for(t in which(Data$brief_raw_emotional_control==888))
+{
+  Data$brief_raw_emotional_control[t]=ifelse(Data$diagnosis[t]==0,d14$m[1],d14$m[2])
+}
+
+d15=Data%>%filter(brief_raw_initiate!=888)%>%group_by(diagnosis)%>%summarise(m=mean(brief_raw_initiate))
+for(t in which(Data$brief_raw_initiate==888))
+{
+  Data$brief_raw_initiate[t]=ifelse(Data$diagnosis[t]==0,d15$m[1],d15$m[2])
+}
+
+d16=Data%>%filter(brief_raw_working_memory!=888)%>%group_by(diagnosis)%>%summarise(m=mean(brief_raw_working_memory))
+for(t in which(Data$brief_raw_working_memory==888))
+{
+  Data$brief_raw_working_memory[t]=ifelse(Data$diagnosis[t]==0,d16$m[1],d16$m[2])
+}
+
+d17=Data%>%filter(brief_raw_plan_organise!=888)%>%group_by(diagnosis)%>%summarise(m=mean(brief_raw_plan_organise))
+for(t in which(Data$brief_raw_plan_organise==888))
+{
+  Data$brief_raw_plan_organise[t]=ifelse(Data$diagnosis[t]==0,d17$m[1],d17$m[2])
+}
+
+d18=Data%>%filter(brief_raw_task_monitor!=888)%>%group_by(diagnosis)%>%summarise(m=mean(brief_raw_task_monitor))
+for(t in which(Data$brief_raw_task_monitor==888))
+{
+  Data$brief_raw_task_monitor[t]=ifelse(Data$diagnosis[t]==0,d18$m[1],d18$m[2])
+}
+
+d19=Data%>%filter(brief_raw_organisation_of_materials!=888)%>%group_by(diagnosis)%>%summarise(m=mean(brief_raw_organisation_of_materials))
+for(t in which(Data$brief_raw_organisation_of_materials==888))
+{
+  Data$brief_raw_organisation_of_materials[t]=ifelse(Data$diagnosis[t]==0,d19$m[1],d19$m[2])
+}
+```
+
+```{r}
+d20=Data%>%filter(flanker_percenterrors_congruent!=888)%>%group_by(diagnosis)%>%summarise(m=mean(flanker_percenterrors_congruent))
+for(t in which(Data$flanker_percenterrors_congruent==888))
+{
+  Data$flanker_percenterrors_congruent[t]=ifelse(Data$diagnosis[t]==0,d20$m[1],d20$m[2])
+}
+
+d21=Data%>%filter(flanker_percenterrors_incongruent!=888)%>%group_by(diagnosis)%>%summarise(m=mean(flanker_percenterrors_incongruent))
+for(t in which(Data$flanker_percenterrors_incongruent==888))
+{
+  Data$flanker_percenterrors_incongruent[t]=ifelse(Data$diagnosis[t]==0,d21$m[1],d21$m[2])
+}
+
+d22=Data%>%filter(flanker_mean_rt_congruent!=888)%>%group_by(diagnosis)%>%summarise(m=mean(flanker_mean_rt_congruent))
+for(t in which(Data$flanker_mean_rt_congruent==888))
+{
+  Data$flanker_mean_rt_congruent[t]=ifelse(Data$diagnosis[t]==0,d22$m[1],d22$m[2])
+}
+
+d23=Data%>%filter(flanker_mean_rt_incongruent!=888)%>%group_by(diagnosis)%>%summarise(m=mean(flanker_mean_rt_incongruent))
+for(t in which(Data$flanker_mean_rt_incongruent==888))
+{
+  Data$flanker_mean_rt_incongruent[t]=ifelse(Data$diagnosis[t]==0,d23$m[1],d23$m[2])
+}
+
+Data$pvt_mean_rt[54]="1140.8333333"
+Data$pvt_mean_rt=as.double(Data$pvt_mean_rt)
+d24=Data%>%filter(pvt_mean_rt!=888)%>%group_by(diagnosis)%>%summarise(m=mean(pvt_mean_rt))
+for(t in which(Data$pvt_mean_rt==888))
+{
+  Data$pvt_mean_rt[t]=ifelse(Data$diagnosis[t]==0,d24$m[1],d24$m[2])
+}
+
+d25=Data%>%filter(pvt_number_of_lapses!=888)%>%group_by(diagnosis)%>%summarise(m=mean(pvt_number_of_lapses))
+for(t in which(Data$pvt_number_of_lapses==888))
+{
+  Data$pvt_number_of_lapses[t]=ifelse(Data$diagnosis[t]==0,d25$m[1],d25$m[2])
+}
+
+d26=Data%>%filter(pvt_mean_lapse_rt!=888)%>%group_by(diagnosis)%>%summarise(m=mean(pvt_mean_lapse_rt))
+for(t in which(Data$pvt_mean_lapse_rt==888))
+{
+  Data$pvt_mean_lapse_rt[t]=ifelse(Data$diagnosis[t]==0,d26$m[1],d26$m[2])
+}
+
+d27=Data%>%filter(pvt_count_falsestarts!=888)%>%group_by(diagnosis)%>%summarise(m=mean(pvt_count_falsestarts))
+for(t in which(Data$pvt_count_falsestarts==888))
+{
+  Data$pvt_count_falsestarts[t]=ifelse(Data$diagnosis[t]==0,d27$m[1],d27$m[2])
+}
+```
+
+
+```{r}
+# Gender analysis
+data1=Data%>%filter(diagnosis==0)
+data1$gender=as.character(data1$gender)
+data1$gender=ifelse(as.double(data1$gender)==0,"male","female")
+blank_theme <- theme_minimal()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    panel.border = element_blank(),
+    panel.grid=element_blank(),
+    axis.ticks = element_blank(),
+    plot.title=element_text(size=14, face="bold")
+  )
+ggplot(data=data1, mapping=aes(x="gender",fill=gender))+
+  geom_bar(stat="count",width=0.5,position='stack',size=5)+
+  coord_polar("y", start=0)+
+  scale_fill_manual(values=c("pink", "#56B4E9"))+
+  blank_theme+
+  geom_text(stat="count",aes(label = scales::percent(..count../51)), size=4, position=position_stack(vjust = 0.5))
+```
+
+
+
+```{r}
+data2=Data%>%filter(diagnosis==1)
+data2$gender=as.character(data2$gender)
+data2$gender=ifelse(as.double(data2$gender)==0,"male","female")
+ggplot(data=data2, mapping=aes(x="gender",fill=gender))+
+  geom_bar(stat="count",width=0.5,position='stack',size=5)+
+  coord_polar("y", start=0)+
+  #scale_fill_manual(values=c("pink", "#56B4E9"))+
+  blank_theme+
+  geom_text(stat="count",aes(label = scales::percent(..count../38)), size=4, position=position_stack(vjust = 0.5))
+```
+```{r}
+#Age analysis
+plot(density(data1$age_m)$x,density(data1$age_m)$y,type = 'l',xlim=c(40,200),fg="gray",ylim=c(0,0.02),xlab = "age in months",ylab="density")
+polygon(density(data1$age_m)$x,density(data1$age_m)$y,col="pink",border = "pink",density=10)
+lines(density(data2$age_m)$x,density(data2$age_m)$y)
+polygon(density(data2$age_m)$x,density(data2$age_m)$y,col="cyan",border = "cyan",density=10)
+legend("topright",c("non-autistic","autistic"),pch=c(15,15),col=c("pink","cyan"),bty="n")
+```
+
+
+
+```{r}
+#age acquisition analysis
+Data$diagnosis=as.character(Data$diagnosis)
+Data$age_acquisition=as.character(Data$age_acquisition)
+Data$diagnosis=ifelse(Data$diagnosis==as.character(0),"non-autistic","autistic")
+ggplot(data=Data,mapping=aes(x=diagnosis,fill=factor(age_acquisition,levels=c("5","4","3","2","1","0"))))+
+  geom_bar(stat="count",width=0.5,position='stack')+
+  guides(fill=guide_legend(title="age_acquisition"))+
+  scale_fill_manual(values=c("coral2", "#56B4E9","lightyellow","pink","lightgreen","lightblue"))+
+  geom_text(stat="count",aes(label=..count..),position=position_stack(vjust = 0.5),size=1.8)
+```
+
+
+```{r}
+#analysis of where_English
+Data$where_english=as.character(Data$where_english)
+for(i in 1:nrow(Data))
+{
+  if(Data$where_english[i]==as.character(1))
+  {
+    Data$where_english[i]="Home"
+  }
+  if(Data$where_english[i]==as.character(2))
+  {
+    Data$where_english[i]="Nursery"
+  }
+  if(Data$where_english[i]==as.character(3))
+  {
+    Data$where_english[i]="Playgroup"
+  }
+  if(Data$where_english[i]==as.character(4))
+  {
+    Data$where_english[i]="School"
+  }
+}
+```
+
+
+```{r}
+t1=Data%>%filter(diagnosis=="autistic")%>%group_by(where_english)%>%summarise(n=n())
+t1$p=scales::percent(t1$n/sum(t1$n))
+t1=t1%>%mutate(diagnosis=rep("autistic",4))
+t2=Data%>%filter(diagnosis=="non-autistic")%>%group_by(where_english)%>%summarise(n=n())
+t2$p=scales::percent(t2$n/sum(t2$n))
+t2=t2%>%mutate(diagnosis=rep("non-autistic",4))
+t=rbind(t1,t2)
+ggplot(data=t,aes(x=where_english,y=n,group=diagnosis))+
+  geom_col(aes(fill=diagnosis),position="dodge",width = 0.7)+
+  scale_fill_manual(values=c("skyblue","coral"))+
+  xlab("where did children learn English")+
+  geom_text(aes(label=p),position = position_dodge(0.9),vjust=-0.5)+
+  ylim(c(0,45))+
+  ylab("count")
+```
+
+```{r}
+#Analysis of 
+ggplot(data=Data,aes(x=diagnosis,y=bilec_home_input,fill=diagnosis))+
+  stat_boxplot(geom = "errorbar",width=0.15)+
+  geom_boxplot(outlier.alpha = 0)+
+  ylab("percentage of time")
+ggplot(data=Data,aes(x=diagnosis,y=bilec_english_input,fill=diagnosis))+
+  stat_boxplot(geom = "errorbar",width=0.15)+
+  geom_boxplot(outlier.alpha = 0)+
+  ylab("percentage of time")
+```
+
+```{r}
+ggplot(data=Data,aes(x=diagnosis,y=bilec_home_output,fill=diagnosis))+
+  stat_boxplot(geom = "errorbar",width=0.15)+
+  geom_boxplot(outlier.alpha = 0)+
+  ylab("percentage of time")
+ggplot(data=Data,aes(x=diagnosis,y=bilec_english_output,fill=diagnosis))+
+  stat_boxplot(geom = "errorbar",width=0.15)+
+  geom_boxplot(outlier.alpha = 0)+
+  ylab("percentage of time")
+```
+
+```{r}
+ggplot(data=Data,aes(x=diagnosis,y=bilec_total_input,fill=diagnosis))+
+  stat_boxplot(geom = "errorbar",width=0.15)+
+  geom_boxplot(outlier.alpha = 0)+
+  ylab("percentage of time")+
+  scale_fill_manual(values = c("pink","skyblue"))
+ggplot(data=Data,aes(x=diagnosis,y=bilec_total_output,fill=diagnosis))+
+  stat_boxplot(geom = "errorbar",width=0.15)+
+  geom_boxplot(outlier.alpha = 0)+
+  ylab("percentage of time")+
+  scale_fill_manual(values = c("pink","skyblue"))
+```
+
+```{r}
+ggplot(data=Data,aes(x=diagnosis,y=wasi_sum_rawscores,fill=diagnosis))+
+  stat_boxplot(geom = "errorbar",width=0.15)+
+  geom_boxplot(outlier.alpha = 0)+
+  ylab("IQ")+
+  scale_fill_manual(values = c("pink","skyblue"))
+```
+
+```{r}
+#save(Data,file="../code-analysis/Data.Rda")
+```

@@ -1,0 +1,146 @@
+---
+title: "factor-analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#library(readxl)
+library(dbplyr)
+library(tidyverse)
+library(ggplot2)
+library(scatterplot3d)
+```
+
+
+
+```{r}
+#rm(list=ls())
+```
+
+
+```{r}
+load("../code-analysis/Data.Rda")
+```
+
+
+1.Language analysis
+```{r}
+Data$bpvs_raw=scale(Data$bpvs_raw)
+Data$vocabprocess_processing_speed_target=scale(Data$vocabprocess_processing_speed_target)
+```
+
+```{r}
+D11=Data%>%filter(diagnosis=="non-autistic")%>%select(c(bpvs_raw,vocabprocess_processing_speed_target))%>%mutate(x=c(1:51),diagnosis=rep("non-autistic",51))
+D12=Data%>%filter(diagnosis=="autistic")%>%select(c(bpvs_raw,vocabprocess_processing_speed_target))%>%mutate(x=c(1:38),diagnosis=rep("autistic",38))
+D1=rbind(D11,D12)
+#d11=D11%>%select(c(bpvs_raw,x))%>%mutate(type=rep("Direct Assessment",51))
+#names(d11)=c("value","x","type")
+#d12=D11%>%select(c(vocabprocess_processing_speed_target,x))%>%mutate(type=rep("Eye Tracker",51))
+#names(d12)=c("value","x","type")
+#d1=rbind(d11,d12)
+```
+
+```{r}
+D11=D11%>%arrange(bpvs_raw)
+```
+
+```{r}
+ggplot(D1,aes(x=bpvs_raw,y=vocabprocess_processing_speed_target,color=diagnosis))+
+  geom_point()+
+  scale_color_brewer(palette = "Set1")+
+  geom_smooth()+
+  xlab("Direct Assessment")+
+  ylab("Eye Tracking")
+  
+```
+
+2.Social cognition
+```{r}
+s1=data.frame(tomi_early=scale(Data$tomi_early),tomi_basic=scale(Data$tomi_basic),tomi_advanced=scale(Data$tomi_advanced))
+s1.PCA=princomp(s1,cor=TRUE)
+summary(s1.PCA,loadings=TRUE)
+```
+
+```{r}
+Parent_Report=0.558*scale(Data$tomi_early)+0.589*scale(Data$tomi_basic)+0.585*scale(Data$tomi_advanced)
+Direct_Assessment=scale(Data$tom_tb_totalscore)
+Eye_Tracking=0.707*scale(Data$et_figurestask_dwell_time_interacting-Data$et_figurestask_dwell_time_not_interacting)+0.707*scale(Data$et_falsebelief_testtrial_preference_score)
+```
+
+```{r}
+D2=data.frame(Parent_Report=Parent_Report,Direct_Assessment=Direct_Assessment,Eye_Tracking=Eye_Tracking)
+D2=D2%>%mutate(diagnosis=c(rep("non-autistic",51),rep("autistic",38)))
+```
+
+```{r}
+colors=ifelse(D2$diagnosis=="non-autistic","pink","skyblue")
+#colors=colors[as.numeric(D2$diagnosis)]
+s3d=scatterplot3d(D2[,1:3],color=colors,type="h",box=FALSE,xlab="parent Report",ylab="Direct Assessment",zlab="Eye Tracking")
+legend(s3d$xyz.convert(-4.5,-3,6),legend=c("non-autistic","autistic"),col=c("pink","skyblue"),pch=16,bty="n",cex=0.95)
+s3d
+```
+
+```{r}
+ggplot(D2,aes(x=Parent_Report,y=Direct_Assessment,color=diagnosis))+
+  geom_point()+
+  scale_color_brewer(palette = "Set2")+
+  geom_smooth()+
+  xlab("Parent Report")+
+  ylab("Direct Assessment")
+
+ggplot(D2,aes(x=Parent_Report,y=Eye_Tracking,color=diagnosis))+
+  geom_point()+
+  scale_color_brewer(palette = "Set2")+
+  geom_smooth()+
+  xlab("Parent Report")+
+  ylab("Eye Tracking")
+
+ggplot(D2,aes(x=Direct_Assessment,y=Eye_Tracking,color=diagnosis))+
+  geom_point()+
+  scale_color_brewer(palette = "Set2")+
+  geom_smooth()+
+  ylab("Eye tracking")+
+  xlab("Direct Assessment")
+```
+
+
+3.Executive functions
+```{r}
+e=data.frame(flanker_percenterrors_congruent=scale(Data$flanker_percenterrors_congruent),flanker_percenterrors_incongruent=scale(Data$flanker_percenterrors_incongruent),flanker_mean_rt_congruent=scale(Data$flanker_mean_rt_congruent),flanker_mean_rt_incongruent=scale(Data$flanker_mean_rt_incongruent),pvt_mean_rt=scale(Data$pvt_mean_rt),pvt_number_of_lapses=scale(Data$pvt_number_of_lapses),pvt_mean_lapse_rt=scale(Data$pvt_mean_lapse_rt),pvt_count_falsestarts=scale(Data$pvt_count_falsestarts))
+#e.PCA=princomp(e,cor=TRUE)
+#summary(e.PCA,loadings=TRUE)
+```
+
+```{r}
+brief=0.354*scale(Data$brief_raw_inhibit)+0.183*scale(Data$`brief_raw_self-monitor`)+0.351*scale(Data$brief_raw_shift)+0.330*scale(Data$brief_raw_emotional_control)+0.347*scale(Data$brief_raw_initiate)+0.361*scale(Data$brief_raw_working_memory)+0.371*scale(Data$brief_raw_plan_organise)+0.362*scale(Data$brief_raw_task_monitor)+0.299*scale(Data$brief_raw_organisation_of_materials)
+flanker=0.491*scale(Data$flanker_percenterrors_congruent)+0.483*scale(Data$flanker_percenterrors_incongruent)+0.533*scale(Data$flanker_mean_rt_congruent)+0.493*scale(Data$flanker_percenterrors_incongruent)
+pvt=0.677*scale(Data$pvt_mean_rt)+0.316*scale(Data$pvt_number_of_lapses)+0.654*scale(Data$pvt_mean_lapse_rt)+0.123*scale(Data$pvt_count_falsestarts)
+D3=data.frame(brief=brief,flanker=flanker,pvt=pvt)
+D3=D3%>%mutate(diagnosis=c(rep("non-autistic",51),rep("autistic",38)))
+```
+
+```{r}
+ggplot(D3,aes(x=brief,y=flanker,color=diagnosis))+
+  geom_point()+
+  scale_color_brewer(palette = "Pastel1")+
+  geom_smooth()+
+  xlab("Parent Report")+
+  ylab("Direct Assessment")
+
+ggplot(D3,aes(x=brief,y=pvt,color=diagnosis))+
+  geom_point()+
+  scale_color_brewer(palette = "Pastel1")+
+  geom_smooth()+
+  xlab("Parent Report")+
+  ylab("Direct Assessment")
+```
+
+
+
+
+
+
